@@ -55,13 +55,20 @@ export default function ConfiguracionPage() {
     const file = e.target.files?.[0]
     if (!file || !empresa) return
     setUploading(true)
-    const ext = file.name.split('.').pop()
-    const path = `logos/${empresa.id}.${ext}`
-    const { error: upErr } = await supabase.storage.from('comprobantes').upload(path, file, { upsert: true })
-    if (upErr) { setError(upErr.message); setUploading(false); return }
-    const { data: urlData } = supabase.storage.from('comprobantes').getPublicUrl(path)
-    await supabase.from('empresas').update({ logo_url: urlData.publicUrl }).eq('id', empresa.id)
-    setForm(p => ({ ...p, logo_url: urlData.publicUrl }))
+    setError('')
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('empresa_id', empresa.id)
+
+    const res = await fetch('/api/upload-logo', { method: 'POST', body: formData })
+    const data = await res.json()
+
+    if (!res.ok || !data.ok) {
+      setError(data.error ?? 'Error al subir el logo')
+    } else {
+      setForm(p => ({ ...p, logo_url: data.url }))
+    }
     setUploading(false)
   }
 

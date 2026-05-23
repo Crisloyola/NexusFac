@@ -1,4 +1,4 @@
-export type TipoComprobante = '01' | '03'
+export type TipoComprobante = '01' | '03' | '07'
 export type EstadoComprobante = 'borrador' | 'enviado' | 'aceptado' | 'rechazado' | 'anulado'
 export type RolUsuario = 'admin' | 'vendedor'
 export type TipoDocumento = '6' | '1'

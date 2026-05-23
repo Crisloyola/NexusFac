@@ -11,6 +11,12 @@ Font.register({
   fonts: [{ src: 'Helvetica' }, { src: 'Helvetica-Bold', fontWeight: 'bold' }],
 })
 
+const TIPO_LABELS: Record<string, string> = {
+  '01': 'FACTURA ELECTRÓNICA',
+  '03': 'BOLETA DE VENTA ELECTRÓNICA',
+  '07': 'NOTA DE CRÉDITO ELECTRÓNICA',
+}
+
 const s = StyleSheet.create({
   page: { fontFamily: 'Helvetica', fontSize: 8, padding: 30, color: '#1a1a1a' },
   row: { flexDirection: 'row' },
@@ -33,7 +39,7 @@ const s = StyleSheet.create({
   totalFinal: { width: 80, textAlign: 'right', fontSize: 9, fontWeight: 'bold', color: '#1e3a5f' },
   totalFinalValue: { width: 60, textAlign: 'right', fontSize: 9, fontWeight: 'bold', color: '#1e3a5f' },
   letras: { backgroundColor: '#eff6ff', borderRadius: 3, padding: '4 8', marginTop: 4, marginBottom: 8 },
-  footer: { marginTop: 10, borderTop: '0.5pt solid #e5e7eb', paddingTop: 6, flexDirection: 'row', justifyContent: 'space-between' },
+  footer: { marginTop: 10, borderTop: '0.5pt solid #e5e7eb', paddingTop: 6, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
 })
 
 interface Props {
@@ -41,14 +47,18 @@ interface Props {
   items: ComprobanteItem[]
   empresa: Empresa
   cliente: Cliente | null
+  logoBase64?: string
+  qrBase64?: string
 }
 
-export default function ComprobantePdf({ comprobante, items, empresa, cliente }: Props) {
-  const tipoLabel = comprobante.tipo === '01' ? 'FACTURA ELECTRÓNICA' : 'BOLETA DE VENTA ELECTRÓNICA'
+export default function ComprobantePdf({ comprobante, items, empresa, cliente, logoBase64, qrBase64 }: Props) {
+  const tipoLabel = TIPO_LABELS[comprobante.tipo] ?? 'COMPROBANTE ELECTRÓNICO'
   const numeroCompleto = `${comprobante.serie}-${String(comprobante.numero).padStart(8, '0')}`
   const fechaFormato = new Date(comprobante.fecha + 'T00:00:00').toLocaleDateString('es-PE', {
     day: '2-digit', month: 'long', year: 'numeric',
   })
+
+  const logoSrc = logoBase64 ?? empresa.logo_url
 
   return (
     <Document>
@@ -56,7 +66,7 @@ export default function ComprobantePdf({ comprobante, items, empresa, cliente }:
         {/* HEADER */}
         <View style={s.header}>
           <View style={[s.col, { flex: 1, paddingRight: 16 }]}>
-            {empresa.logo_url && <Image src={empresa.logo_url} style={s.logo} />}
+            {logoSrc && <Image src={logoSrc} style={s.logo} />}
             <Text style={{ fontSize: 9, fontWeight: 'bold', marginTop: 4 }}>{empresa.razon_social}</Text>
             <Text style={{ fontSize: 7, color: '#555', marginTop: 2 }}>RUC: {empresa.ruc}</Text>
             <Text style={{ fontSize: 7, color: '#555', marginTop: 1 }}>{empresa.direccion}</Text>
@@ -143,7 +153,7 @@ export default function ComprobantePdf({ comprobante, items, empresa, cliente }:
 
         {/* FOOTER */}
         <View style={s.footer}>
-          <View>
+          <View style={{ flex: 1 }}>
             {comprobante.hash_cdr && (
               <>
                 <Text style={{ fontSize: 6, color: '#888' }}>Hash CDR:</Text>
@@ -157,12 +167,16 @@ export default function ComprobantePdf({ comprobante, items, empresa, cliente }:
                 Obs: {comprobante.observaciones}
               </Text>
             )}
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 6, color: '#aaa' }}>Comprobante electrónico emitido vía</Text>
-            <Text style={{ fontSize: 7, color: '#1e3a5f', fontWeight: 'bold' }}>NexusFac + Nubefact OSE</Text>
+            <Text style={{ fontSize: 6, color: '#aaa', marginTop: 4 }}>Comprobante electrónico emitido vía</Text>
+            <Text style={{ fontSize: 7, color: '#1e3a5f', fontWeight: 'bold' }}>NexusFac</Text>
             <Text style={{ fontSize: 6, color: '#aaa', marginTop: 1 }}>Representación impresa del comprobante electrónico</Text>
           </View>
+          {qrBase64 && (
+            <View style={{ alignItems: 'center', marginLeft: 12 }}>
+              <Image src={qrBase64} style={{ width: 64, height: 64 }} />
+              <Text style={{ fontSize: 5, color: '#aaa', marginTop: 2 }}>Código QR SUNAT</Text>
+            </View>
+          )}
         </View>
       </Page>
     </Document>

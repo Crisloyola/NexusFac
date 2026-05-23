@@ -6,12 +6,13 @@ import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 const navItems = [
-  { href: '/dashboard',     label: 'Inicio',         icon: '🏠' },
+  { href: '/dashboard',     label: 'Inicio',            icon: '🏠' },
   { href: '/emitir',        label: 'Nuevo comprobante', icon: '✏️' },
-  { href: '/comprobantes',  label: 'Comprobantes',   icon: '📄' },
-  { href: '/clientes',      label: 'Clientes',       icon: '👥' },
-  { href: '/productos',     label: 'Productos',      icon: '📦' },
-  { href: '/configuracion', label: 'Configuración',  icon: '⚙️' },
+  { href: '/comprobantes',  label: 'Comprobantes',      icon: '📄' },
+  { href: '/reportes',      label: 'Reportes',          icon: '📊' },
+  { href: '/clientes',      label: 'Clientes',          icon: '👥' },
+  { href: '/productos',     label: 'Productos',         icon: '📦' },
+  { href: '/configuracion', label: 'Configuración',     icon: '⚙️' },
 ]
 
 interface SidebarProps {

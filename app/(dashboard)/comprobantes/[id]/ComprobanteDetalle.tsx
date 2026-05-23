@@ -3,11 +3,18 @@
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import QRCode from 'qrcode'
 import { createClient } from '@/lib/supabase/client'
 import type { Comprobante, ComprobanteItem, Empresa, Cliente } from '@/types/database'
 
 const PdfDownloadButton = dynamic(() => import('@/components/PdfDownloadButton'), { ssr: false })
+
+const TIPO_LABELS: Record<string, string> = {
+  '01': 'Factura',
+  '03': 'Boleta',
+  '07': 'Nota de Crédito',
+}
 
 const estadoColors: Record<string, string> = {
   aceptado: 'bg-green-100 text-green-700',
@@ -29,6 +36,34 @@ export default function ComprobanteDetalle({ comprobante, empresa }: Props) {
   const supabase = createClient()
   const [accionLoading, setAccionLoading] = useState(false)
   const [showConfirm, setShowConfirm] = useState<'eliminar' | 'anular' | null>(null)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+
+  const qrData = (comprobante.nubefact_response as Record<string, string> | null)?.cadena_para_codigo_qr
+  const pdfUrl = (comprobante.nubefact_response as Record<string, string> | null)?.enlace_del_pdf
+
+  useEffect(() => {
+    if (!qrData) return
+    QRCode.toDataURL(qrData, { width: 120, margin: 1 }).then(setQrDataUrl).catch(() => null)
+  }, [qrData])
+
+  function handleWhatsApp() {
+    if (!cliente?.telefono) return
+    const telefono = cliente.telefono.replace(/\D/g, '')
+    const numero = telefono.length === 9 ? `51${telefono}` : telefono
+
+    const tipoTexto = TIPO_LABELS[comprobante.tipo] ?? 'Comprobante'
+    const fecha = new Date(comprobante.fecha + 'T00:00:00').toLocaleDateString('es-PE', { dateStyle: 'long' })
+    const total = `S/ ${Number(comprobante.total).toFixed(2)}`
+
+    let mensaje = `Hola ${cliente.nombre}!\n\nTe enviamos tu *${tipoTexto} Electrónica* de *${empresa.razon_social}*:\n\n`
+    mensaje += `📄 Número: *${numeroCompleto}*\n`
+    mensaje += `📅 Fecha: ${fecha}\n`
+    mensaje += `💰 Total: *${total}*\n`
+    if (pdfUrl) mensaje += `\n📥 Descarga tu comprobante:\n${pdfUrl}\n`
+    mensaje += `\n_Comprobante válido ante SUNAT_`
+
+    window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, '_blank')
+  }
 
   async function handleEliminar() {
     setAccionLoading(true)
@@ -48,7 +83,7 @@ export default function ComprobanteDetalle({ comprobante, empresa }: Props) {
     router.refresh()
   }
 
-  const tipoLabel = comprobante.tipo === '01' ? 'Factura' : 'Boleta'
+  const tipoLabel = TIPO_LABELS[comprobante.tipo] ?? 'Comprobante'
   const numeroCompleto = `${comprobante.serie}-${String(comprobante.numero).padStart(8, '0')}`
 
   return (
@@ -99,6 +134,14 @@ export default function ComprobanteDetalle({ comprobante, empresa }: Props) {
             >
               CDR
             </a>
+          )}
+          {cliente?.telefono && (
+            <button
+              onClick={handleWhatsApp}
+              className="bg-green-500 hover:bg-green-600 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+            >
+              WhatsApp
+            </button>
           )}
           <button
             onClick={() => window.print()}
@@ -281,12 +324,23 @@ export default function ComprobanteDetalle({ comprobante, empresa }: Props) {
           </div>
         </div>
 
-        {/* Footer CDR / observaciones */}
-        {(comprobante.hash_cdr || comprobante.observaciones) && (
-          <div className="px-6 pb-6 pt-2 border-t border-gray-100 text-xs text-gray-400 space-y-1">
-            {comprobante.hash_cdr && <p>Hash CDR: <span className="font-mono">{comprobante.hash_cdr}</span></p>}
-            {comprobante.observaciones && <p>Obs: {comprobante.observaciones}</p>}
-            <p className="text-right text-gray-300 pt-2">Representación impresa del comprobante electrónico — NexusFac</p>
+        {/* Footer CDR / QR / observaciones */}
+        {(comprobante.hash_cdr || comprobante.observaciones || qrDataUrl) && (
+          <div className="px-6 pb-6 pt-4 border-t border-gray-100 flex items-start justify-between gap-6">
+            <div className="text-xs text-gray-400 space-y-1 flex-1">
+              {comprobante.hash_cdr && (
+                <p>Hash CDR: <span className="font-mono break-all">{comprobante.hash_cdr}</span></p>
+              )}
+              {comprobante.observaciones && <p>Obs: {comprobante.observaciones}</p>}
+              <p className="text-gray-300 pt-2">Representación impresa del comprobante electrónico — NexusFac</p>
+            </div>
+            {qrDataUrl && (
+              <div className="flex flex-col items-center shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrDataUrl} alt="Código QR SUNAT" className="w-24 h-24 border border-gray-100 rounded" />
+                <p className="text-xs text-gray-400 mt-1">QR SUNAT</p>
+              </div>
+            )}
           </div>
         )}
       </div>

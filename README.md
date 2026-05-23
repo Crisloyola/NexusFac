@@ -72,6 +72,10 @@ NUBEFACT_TOKEN=tu_token_demo
 
 # Consulta RUC/DNI (opcional)
 DECOLECTA_TOKEN=sk_xxxxx.xxxxx
+
+# Email con Resend (para botón "Enviar por email")
+RESEND_API_KEY=re_xxxxx
+RESEND_FROM_EMAIL=NexusFac <noreply@tudominio.com>
 ```
 
 ### 3. Configurar la base de datos

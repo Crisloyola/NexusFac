@@ -125,6 +125,7 @@ export default function ComprobantesPage() {
               <option value="">Todos</option>
               <option value="01">Factura</option>
               <option value="03">Boleta</option>
+              <option value="07">Nota de Crédito</option>
             </select>
           </div>
 
@@ -201,7 +202,9 @@ export default function ComprobantesPage() {
                       <p className="font-mono font-semibold text-blue-700">
                         {c.serie}-{String(c.numero).padStart(8, '0')}
                       </p>
-                      <p className="text-xs text-gray-400">{c.tipo === '01' ? 'Factura' : 'Boleta'}</p>
+                      <p className="text-xs text-gray-400">
+                        {c.tipo === '01' ? 'Factura' : c.tipo === '03' ? 'Boleta' : 'Nota de Crédito'}
+                      </p>
                     </td>
 
                     {/* Cliente */}
